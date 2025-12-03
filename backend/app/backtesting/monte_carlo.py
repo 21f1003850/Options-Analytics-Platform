@@ -11,7 +11,8 @@ def run_monte_carlo_simulation(
     drift: float,
     days: int,
     num_simulations: int = 1000,
-    dt: float = 1/252  # Daily steps
+    dt: float = 1/252,  # Daily steps
+    random_seed: Optional[int] = None
 ) -> np.ndarray:
     """
     Run Monte Carlo simulation for underlying price paths
@@ -25,11 +26,13 @@ def run_monte_carlo_simulation(
         days: Number of days to simulate
         num_simulations: Number of simulation paths
         dt: Time step (1/252 for daily)
+        random_seed: Optional seed for reproducibility
         
     Returns:
         Array of shape (num_simulations, days+1) with price paths
     """
-    np.random.seed(42)  # For reproducibility
+    if random_seed is not None:
+        np.random.seed(random_seed)
     
     num_steps = days
     

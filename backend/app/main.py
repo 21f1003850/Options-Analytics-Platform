@@ -4,11 +4,19 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import asyncio
+import logging
 from typing import List
 
 from .config import settings
 from .api import api_router
 from .models import HealthResponse
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
@@ -159,16 +167,16 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    print(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    print(f"API docs available at: /docs")
-    print(f"Health check at: /health")
+    logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info(f"API docs available at: /docs")
+    logger.info(f"Health check at: /health")
 
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    print(f"Shutting down {settings.APP_NAME}")
+    logger.info(f"Shutting down {settings.APP_NAME}")
 
 
 if __name__ == "__main__":
