@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: options_postgres
+    environment:
+      POSTGRES_USER: options_user
+      POSTGRES_PASSWORD: options_password
+      POSTGRES_DB: options_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - options_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U options_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: options_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - options_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: options_backend
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=options_user
+      - POSTGRES_PASSWORD=options_password
+      - POSTGRES_DB=options_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=False
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - options_network
+    volumes:
+      - ./backend/app:/app/app
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: options_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - options_network
+    restart: unless-stopped
+
+networks:
+  options_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
